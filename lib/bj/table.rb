@@ -102,7 +102,8 @@ class Bj
             t.column "priority"       , :integer
             t.column "tag"            , :text
             t.column "is_restartable" , :integer
-
+            t.column "dependency_id"  , :integer
+            
             t.column "submitter"      , :text
             t.column "runner"         , :text
             t.column "pid"            , :integer

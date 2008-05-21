@@ -378,6 +378,14 @@ txt
       argument :required
     }
     option("--daemon"){}
+    option("--only-tag"){
+      argument :required
+      description "Only execute jobs with this tag name"
+    }
+    option("--except-tag"){
+      argument :required
+      description "Excute all jobs which don't have this tag name"
+    }
 
     def run
       options = {}
@@ -388,7 +396,7 @@ txt
       end
 =end
 
-      %w[ forever ppid wait limit ].each do |key|
+      %w[ forever ppid wait limit only-tag except-tag ].each do |key|
         options[key.to_sym] = param[key].value if param[key].given?
       end
 

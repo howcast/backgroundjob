@@ -94,13 +94,11 @@ class Bj
 
       def key ppid = 0
         ppid ||= 0
-        #"#{ Bj.rails_env }.#{ ppid }.pid"
-        "runner.#{ ppid }.pid"
+        "#{ Bj.rails_env }.#{ ppid }.pid"
       end
 
       def no_tickle_key 
-        # "#{ Bj.rails_env }.no_tickle"
-        "no_tickle"
+        "#{ Bj.rails_env }.no_tickle"
       end
 
       def start options = {}
@@ -156,7 +154,9 @@ class Bj
         wait = options[:wait] || 42
         limit = options[:limit]
         forever = options[:forever]
-
+        only_tag = options["only-tag".to_sym]
+        except_tag = options["except-tag".to_sym]
+        
         limit = false if forever
         wait = Integer wait
         loopno = 0
@@ -186,19 +186,29 @@ class Bj
 
               Bj.transaction(options) do
                 now = Time.now
+                
+                conditions = ""
+                conditions += "and tag = '#{only_tag}'" if only_tag
+                conditions += "and tag != '#{except_tag}'" if except_tag
+                
+                jobs = Bj::Table::Job.find :all,
+                                           :conditions => ["state = ? and submitted_at <= ? #{conditions}", "pending", now],
+                                           :order => "priority DESC, submitted_at ASC",
+                                           :lock => true
 
-                job = Bj::Table::Job.find :first,
-                                          :conditions => ["state = ? and submitted_at <= ?", "pending", now],
-                                          :order => "priority DESC, submitted_at ASC", 
-                                          :limit => 1,
-                                          :lock => true
+                job = nil
+                jobs.each do |j|
+                  job = j and break if j.dependency_id.nil?
+                  
+                  dependency = Bj::Table::Job.find j.dependency_id  
+                  job = j and break if dependency.state == 'finished'
+                end
                 throw :no_jobs unless job
-
 
                 Bj.logger.info{ "#{ job.title } - started" }
 
                 command = job.command
-                env = job.env ? YAML.load(job.env) : {}
+                env = job.env || {}
                 stdin = job.stdin || ''
                 stdout = job.stdout || ''
                 stderr = job.stderr || ''

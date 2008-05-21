@@ -232,8 +232,11 @@ DESCRIPTION
   
     :priority => any number, including negative ones.  default is zero.
   
-    :tag => a tag added to the job.  simply makes searching easier.
+    :tag => a tag added to the job.  makes searching easier, and can also be
+            used as filters in runners via --only-tag and --except-tag options.
   
+    :dependency_id => a job id which has to be run before this job
+    
     :env => a hash specifying any additional environment vars the background
             process should have.
   
@@ -253,6 +256,11 @@ DESCRIPTION
                      :tag => 'dynamic ruby code'
   
     jobs Bj.submit array_of_commands, :priority => 451 
+
+    # Dependency example
+    
+    primary_job = Bj.submit './script/runner lib/jobs/primary.rb'
+    Bj.submit './script/runner lib/jobs/post_primary.rb', :dependency_id => primary_job.first.bj_job_id
     
   when jobs are run, they are run in RAILS_ROOT.  various attributes are
   available *only* once the job has finished.  you can check whether or not a
@@ -297,6 +305,10 @@ PARAMETERS
   --log=log, -l (0 ~> log=STDERR) 
       set the logfile 
   --help, -h 
+  --only-tag=tag
+      Only run jobs tagged with this tag
+  --except-tag=tag
+      Run all jobs except those tagged with this tag
 
 AUTHOR
   ara.t.howard@gmail.com
